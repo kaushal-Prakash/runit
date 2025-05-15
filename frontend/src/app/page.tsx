@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FaMoon, FaSun, FaCode, FaUsers, FaRobot, FaLightbulb } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import Footer from '@/components/Footer';
 
 export default function LandingPage() {
   const generateRoomId = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -138,13 +139,7 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="py-8 border-t border-slate-300 dark:border-slate-700">
-        <div className="container mx-auto px-6 text-center">
-          <p className="text-slate-500 dark:text-slate-400">
-            © {new Date().getFullYear()} RunIt. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <Footer/>
     </div>
   );
 }
