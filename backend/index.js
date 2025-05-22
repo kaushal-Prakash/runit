@@ -3,6 +3,7 @@ import cors from 'cors';
 import connectDB from './services/connectDB.js';
 import dotenv from 'dotenv';
 import codeRouter from './routes/codeRoutes.js';
+import aiRouter from './routes/aiRoutes.js';
 
 const app = express();
 app.use(cors());
@@ -16,3 +17,4 @@ app.listen(port,() =>{
 });
 
 app.use("/code",codeRouter);
+app.use("/ai",aiRouter);
