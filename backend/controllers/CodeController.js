@@ -1,4 +1,7 @@
 import Code from "../models/Code.js";
+import axios from "axios";
+import dotenv from "dotenv";
+dotenv.config();
 
 const uploadCode = async (req, res) => {
   try {
@@ -41,5 +44,54 @@ const getCode = async (req, res) => {
   }
 };
 
+const langMap = {
+  c: 50,
+  cpp: 54,
+  java: 62,
+  js: 63,
+  python: 71,
+};
 
-export { uploadCode, getCode };
+const runIt = async (req, res) => {
+  const { code, language } = req.body;
+
+  const langMap = {
+    c: 50,
+    cpp: 54,
+    java: 62,
+    js: 63,
+    python: 71,
+  };
+
+  const language_id = langMap[language];
+  if (!language_id) {
+    return res.status(400).json({ error: "Unsupported language" });
+  }
+
+  const encodedCode = Buffer.from(code).toString("base64");
+
+  const options = {
+    method: 'POST',
+    url: 'https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=true&wait=true',
+    headers: {
+      'content-type': 'application/json',
+      'x-rapidapi-host': 'judge0-ce.p.rapidapi.com',
+      'x-rapidapi-key': process.env.RAPIDAPI_KEY, // Make sure this is set
+    },
+    data: {
+      source_code: encodedCode,
+      language_id: language_id,
+    }
+  };
+
+  try {
+    const response = await axios.request(options);
+    res.status(200).json(response.data);
+  } catch (error) {
+    console.error("Error running code:", error.response?.data || error.message);
+    res.status(500).json({ error: "Code execution failed", detail: error.response?.data });
+  }
+};
+
+
+export { uploadCode, getCode,runIt };
