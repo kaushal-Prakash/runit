@@ -26,7 +26,7 @@ const EditorPage = () => {
     const loadCode = async () => {
       if (!id) return;
       try {
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND}code/get/${id}`);
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND}/code/get/${id}`);
         if (res.data?.code) {
           setCode(res.data.code);
           // Set editor value if editor is already mounted
@@ -63,7 +63,7 @@ const EditorPage = () => {
     try {
       setLoadingRun(true);
       setOutput(""); // Clear previous output
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND}code/run`, { 
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND}/code/run`, { 
         code, 
         language 
       });
@@ -87,7 +87,7 @@ const EditorPage = () => {
     try {
       setLoadingAI(true);
       setShowAIHelp(true);
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND}ai/get-hints`, { 
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND}/ai/get-hints`, { 
         code, 
         language 
       });
@@ -104,7 +104,7 @@ const EditorPage = () => {
     if (!code) return toast.error("Write code before saving to cloud"); 
     try {
       setLoadingRun(true);
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND}code/upload`, { 
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND}/code/upload`, { 
         code : code, 
         room : id 
       });
@@ -121,18 +121,29 @@ const EditorPage = () => {
     }
   };
 
+  const copyLink = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url)
+      .then(() => {
+        toast.success("Link copied to clipboard!");
+      })
+      .catch(() => {
+        toast.error("Failed to copy link");
+      });
+  };
+
   const handleChange = (val: string | undefined) => {
-  const value = val ?? "";
-  setCode(value);
-  if (debounceRef.current) clearTimeout(debounceRef.current);
-  debounceRef.current = window.setTimeout(() => {
-    // If you had socket.io functionality before, you would put it here
-    // For example:
-    // if (socketRef.current && id) {
-    //   socketRef.current.emit("chatmessage", { roomId: id, message: value });
-    // }
-  }, 1000);
-};
+    const value = val ?? "";
+    setCode(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      // If you had socket.io functionality before, you would put it here
+      // For example:
+      // if (socketRef.current && id) {
+      //   socketRef.current.emit("chatmessage", { roomId: id, message: value });
+      // }
+    }, 1000);
+  };
 
   return (
     <div className={`min-h-screen bg-gradient-to-tr from-[#0f172a] to-[#1e293b] text-white flex flex-col ${fullscreen ? "fixed inset-0 z-50" : ""}`}>
@@ -148,6 +159,12 @@ const EditorPage = () => {
           <option value="java">java</option>
         </select>
         <div className="flex gap-2">
+          <button 
+            onClick={copyLink}
+            className="bg-purple-600 cursor-pointer hover:bg-purple-700 px-3 py-1 rounded shadow"
+          >
+            Copy Link
+          </button>
           <button 
             onClick={runCode} 
             disabled={loadingRun || loadingAI}
