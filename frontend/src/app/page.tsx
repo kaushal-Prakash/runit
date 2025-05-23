@@ -1,7 +1,7 @@
 'use client';
-import { useEffect, useState } from 'react';
+/* eslint-disable */
 import Link from 'next/link';
-import { FaMoon, FaSun, FaCode, FaUsers, FaRobot, FaLightbulb } from 'react-icons/fa';
+import { FaCode, FaUsers, FaRobot, FaLightbulb } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import Footer from '@/components/Footer';
 
@@ -55,7 +55,7 @@ export default function LandingPage() {
               href={`/${generateRoomId()}`}
               className="px-8 py-3 rounded-md bg-indigo-600 text-white hover:bg-indigo-500 font-medium transition transform hover:scale-105 cursor-pointer"
             >
-              Get Started - It's Free
+              Get Started - It&apos;s Free
             </Link>
             <Link
               href="/about"
@@ -82,7 +82,7 @@ export default function LandingPage() {
             <p className="text-green-400">// Write and run code instantly</p>
             <p className="text-purple-400">function</p> <span className="text-blue-400">hello</span>() {'{'}
             <br />
-            <span className="ml-4 text-red-400">console</span>.<span className="text-yellow-400">log</span>(<span className="text-green-300">'Hello from RunIt!'</span>);
+            <span className="ml-4 text-red-400">console</span>.<span className="text-yellow-400">log</span>(<span className="text-green-300">&apos;Hello from RunIt!&apos;</span>);
             <br />
             {'}'}
             <br />

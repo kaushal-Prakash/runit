@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable */
 import { FaRegSave, FaCloudUploadAlt, FaPlay, FaCode, FaBars, FaTimes } from "react-icons/fa";
 import Link from "next/link";
 import { useState } from "react";

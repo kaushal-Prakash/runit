@@ -26,7 +26,7 @@ export default function AboutPage() {
           </p>
 
           <p>
-            I'm <strong>devShadow</strong> — a developer passionate about building tools that simplify collaboration and empower teams. I believe coding should feel fluid, fun, and frictionless — and that’s exactly what RunIt is here to do.
+            I&apos;m <strong>devShadow</strong> — a developer passionate about building tools that simplify collaboration and empower teams. I believe coding should feel fluid, fun, and frictionless — and that’s exactly what RunIt is here to do.
           </p>
 
           <p>
@@ -34,7 +34,7 @@ export default function AboutPage() {
           </p>
 
           <p>
-            Whether you're debugging with a friend, preparing for interviews, teaching a class, or running a remote code jam — RunIt is designed to be your reliable coding companion.
+            Whether you&apos;re debugging with a friend, preparing for interviews, teaching a class, or running a remote code jam — RunIt is designed to be your reliable coding companion.
           </p>
 
           <p className="italic text-indigo-500 dark:text-indigo-400">
