@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 const getSuggestion = async (req, res) => {
   const code = req.body.code;
+  console.log(code," hello")
 
   const ai = new GoogleGenAI({ apiKey: process.env.GIMINI });
 

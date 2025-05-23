@@ -1,291 +1,239 @@
+// app/editor/[id]/page.tsx
 "use client";
-import { Editor } from "@monaco-editor/react";
-import axios from "axios";
-import { FiMaximize2, FiMinimize2 } from "react-icons/fi";
+
 import { useParams } from "next/navigation";
-import React, { useState, useCallback, useRef, useEffect } from "react";
-import { Bounce, toast, ToastContainer } from "react-toastify";
-import { io } from "socket.io-client";
-import Footer from "@/components/Footer";
-import Navbar from "@/components/Navbar";
-import AI from "@/components/AI";
+import { useEffect, useRef, useState } from "react";
+import axios from "axios";
+import { io, Socket } from "socket.io-client";
+import { FiMaximize2, FiMinimize2 } from "react-icons/fi";
+import { toast, ToastContainer, Bounce } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { Editor } from "@monaco-editor/react";
 
-const socket = io("");
-
-const Page = () => {
-  const params = useParams();
-  const [values, setValues] = useState("");
+const EditorPage = () => {
+  const { id } = useParams();
+  const [code, setCode] = useState("");
   const [output, setOutput] = useState("");
-  const [aiRes, setAiRes] = useState("");
-  const [showResponse, setShowResponse] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("cpp");
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const debounceTimer = useRef<number | null>(null);
-  const [runProg, setRunProg] = useState(false);
-  const editorRef = useRef(null);
+  const [language, setLanguage] = useState("cpp");
+  const [fullscreen, setFullscreen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [aiHelp, setAiHelp] = useState("");
+  const [showAIHelp, setShowAIHelp] = useState(false);
 
-  // Socket.IO setup
+  const socketRef = useRef<Socket | null>(null);
+  const debounceRef = useRef<number | null>(null);
+  const editorRef = useRef<any>(null);
+
+  // Initialize socket connection
   useEffect(() => {
-    if (params.id) {
-      socket.emit("join_room", { roomId: params.id });
-
-      socket.on("load_code", (code) => {
-        if (code) setValues(code);
-      });
-    }
-
-    return () => {
-      if (params.id) {
-        socket.emit("exit_room", { roomId: params.id });
-      }
+    socketRef.current = io(process.env.NEXT_PUBLIC_BACKEND || "http://localhost:5000");
+    return () => { 
+      socketRef.current?.disconnect(); 
     };
-  }, [params.id]);
-
-  useEffect(() => {
-    const handleNewMessage = (msg: string) => setValues(msg);
-    socket.on("new_message", handleNewMessage);
-    return () => socket.off("new_message", handleNewMessage);
   }, []);
 
-  const debouncedEmit = useCallback(
-    (val: string) => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      debounceTimer.current = window.setTimeout(() => {
-        socket.emit("chatmessage", { roomId: params.id, message: val });
-      }, 1000);
-    },
-    [params.id]
-  );
-
-  const handleChange = (value: string | undefined) => {
-    const safeVal = value ?? "";
-    setValues(safeVal);
-    debouncedEmit(safeVal);
-  };
-
-  const handleRunEvent = async () => {
-    setRunProg(true);
-    setOutput(""); 
-    if (!values) {
-      toast.error("Please enter code before running");
-      setRunProg(false);
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const response = await axios.post(
-        "",
-        {
-          source_code: values,
-          language: selectedLanguage,
+  // Load initial code from DB
+  useEffect(() => {
+    const loadCode = async () => {
+      if (!id) return;
+      try {
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND}code/get/${id}`);
+        if (res.data?.code) {
+          setCode(res.data.code);
+          // Set editor value if editor is already mounted
+          if (editorRef.current) {
+            editorRef.current.setValue(res.data.code);
+          }
         }
-      );
-      const data = response.data;
-      setOutput(
-        data.stdout ||
-          data.stderr ||
-          data.compile_output ||
-          "Unknown error occurred"
-      );
-    } catch (error) {
-      setOutput("Execution failed. Please try again.");
-      toast.error("Something went wrong!");
-    } finally {
-      setRunProg(false);
-      setIsLoading(false);
-    }
-  };
+      } catch (error) {
+        console.error("Failed to load code:", error);
+      }
+    };
+    loadCode();
+  }, [id]);
 
-  const handleHelp = async () => {
-    if (!values) {
-      toast.error("Please enter code before getting help");
-      return;
-    }
+  // Socket.IO room management
+  useEffect(() => {
+    if (!socketRef.current || !id) return;
+    const socket = socketRef.current;
+    
+    socket.emit("join_room", { roomId: id });
 
-    try {
-      setIsLoading(true);
-      const response = await axios.post(
-        "",
-        {
-          message: values,
-          language: selectedLanguage,
-        }
-      );
-      setAiRes(response.data.aiResponse);
-      setShowResponse(true);
-    } catch {
-      toast.error("AI help failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const handleCodeUpdate = (newCode: string) => {
+      setCode(newCode);
+      if (editorRef.current) {
+        editorRef.current.setValue(newCode);
+      }
+    };
 
-  const saveToLocal = () => {
-    try {
-      localStorage.setItem(`runit-code-${params.id}`, values);
-      toast.success("Saved to local storage");
-    } catch {
-      toast.error("Local save failed");
-    }
-  };
+    socket.on("load_code", handleCodeUpdate);
+    socket.on("new_message", handleCodeUpdate);
 
-  const saveToCloud = async () => {
-    try {
-      setIsLoading(true);
-      await axios.post("", {
-        roomId: params.id,
-        code: values,
-      });
-      toast.success("Saved to cloud");
-    } catch {
-      toast.error("Cloud save failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
+    return () => {
+      socket.emit("exit_room", { roomId: id });
+      socket.off("load_code", handleCodeUpdate);
+      socket.off("new_message", handleCodeUpdate);
+    };
+  }, [id]);
 
   const handleEditorDidMount = (editor: any) => {
     editorRef.current = editor;
+    // Set initial code if it's already loaded
+    if (code) {
+      editor.setValue(code);
+    }
   };
 
-  // Update your main component's return to use the new Navbar:
-  return (
-    <div
-      className={`min-h-screen bg-[#0e0e0e] text-white flex flex-col ${
-        isFullscreen ? "fixed inset-0 z-50" : ""
-      }`}
-    >
-      <Navbar
-        selectedLanguage={selectedLanguage}
-        setSelectedLanguage={setSelectedLanguage}
-        saveToLocal={saveToLocal}
-        saveToCloud={saveToCloud}
-        handleRunEvent={handleRunEvent}
-        handleHelp={handleHelp}
-        isLoading={isLoading}
-        runProg={runProg}
-      />
+  const handleChange = (val: string | undefined) => {
+    const value = val ?? "";
+    setCode(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      if (socketRef.current && id) {
+        socketRef.current.emit("chatmessage", { roomId: id, message: value });
+      }
+    }, 1000);
+  };
 
-      {/* Main Content */}
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-        {/* Editor Panel */}
-        <div
-          className={`${isFullscreen ? "w-full" : "lg:w-2/3 w-full"} relative`}
+  const decodeBase64 = (encoded: string | null): string => {
+    if (!encoded) return "";
+    try {
+      return atob(encoded);
+    } catch {
+      return encoded;
+    }
+  };
+
+  const runCode = async () => {
+    if (!code) return toast.error("Write code before running");
+    try {
+      setLoading(true);
+      setOutput(""); // Clear previous output
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND}code/run`, { 
+        code, 
+        language 
+      });
+
+      const decodedOutput = decodeBase64(res.data.stdout) ||
+                          decodeBase64(res.data.stderr) ||
+                          decodeBase64(res.data.compile_output) ||
+                          "No output";
+
+      setOutput(decodedOutput);
+    } catch (error) {
+      toast.error("Run failed");
+      console.error("Execution error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getAIHelp = async () => {
+    if (!code) return toast.error("Write code before asking help");
+    try {
+      setLoading(true);
+      setShowAIHelp(true);
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND}ai/get-hints`, { 
+        code, 
+        language 
+      });
+      setAiHelp(res.data.hints || res.data.aiResponse || "No suggestions available");
+    } catch (error) {
+      toast.error("AI failed to provide help");
+      console.error("AI error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className={`min-h-screen bg-gradient-to-tr from-[#0f172a] to-[#1e293b] text-white flex flex-col ${fullscreen ? "fixed inset-0 z-50" : ""}`}>
+      <header className="p-4 bg-[#1f2937] flex justify-between items-center shadow-md">
+        <select 
+          className="bg-[#111827] text-white p-2 rounded" 
+          value={language} 
+          onChange={e => setLanguage(e.target.value)}
         >
-          <div className="absolute top-2 right-2 z-10 flex gap-2">
-            <span className="bg-[#2d2d2d] text-xs text-gray-400 px-2 py-1 rounded">
-              {selectedLanguage.toUpperCase()}
-            </span>
-            <button
-              onClick={toggleFullscreen}
-              className="btn-dark flex items-center gap-1 text-sm p-1 cursor-pointer"
-            >
-              {isFullscreen ? <FiMinimize2 /> : <FiMaximize2 />}
-            </button>
-          </div>
+          <option value="cpp">C++</option>
+          <option value="python">Python</option>
+          <option value="javascript">JavaScript</option>
+          <option value="java">Java</option>
+        </select>
+        <div className="flex gap-2">
+          <button 
+            onClick={runCode} 
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded shadow disabled:opacity-50"
+          >
+            {loading ? "Running..." : "Run"}
+          </button>
+          <button 
+            onClick={getAIHelp} 
+            disabled={loading}
+            className="bg-yellow-500 hover:bg-yellow-600 px-3 py-1 rounded shadow disabled:opacity-50"
+          >
+            AI Help
+          </button>
+          <button 
+            onClick={() => setFullscreen(!fullscreen)} 
+            className="px-2 py-1 bg-gray-800 rounded hover:bg-gray-700"
+          >
+            {fullscreen ? <FiMinimize2 /> : <FiMaximize2 />}
+          </button>
+        </div>
+      </header>
+
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 relative">
           <Editor
-            height={
-              isFullscreen ? "calc(100vh - 56px)" : "calc(100vh - 56px - 60px)"
-            }
-            value={values}
             onChange={handleChange}
-            language={selectedLanguage}
+            language={language}
             theme="vs-dark"
-            defaultValue="// Add comments to get better suggestions"
+            height="100%"
+            onMount={handleEditorDidMount}
             options={{
               fontSize: 14,
               lineHeight: 20,
-              automaticLayout: true,
-              renderLineHighlight: "gutter",
               minimap: { enabled: false },
-              scrollBeyondLastLine: false,
-              smoothScrolling: true,
-              padding: { top: 15 },
+              padding: { top: 10 },
               wordWrap: "on",
-              formatOnPaste: true,
-              formatOnType: true,
-              fontFamily: "Fira Code, Consolas, Monaco, monospace",
-              suggest: {
-                showWords: false,
-                showSnippets: true,
-              },
+              automaticLayout: true
             }}
-            onMount={handleEditorDidMount}
           />
         </div>
 
-        {/* Output Panel */}
-        {!isFullscreen && (
-          <div className="lg:w-1/3 w-full border-l border-gray-800 bg-[#161616] flex flex-col">
-            <div className="p-3 border-b border-gray-800 flex justify-between items-center">
-              <h2 className="font-semibold text-yellow-400 flex items-center gap-1">
-                Output
-              </h2>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setOutput("")}
-                  className="cursor-pointer text-xs bg-[#2d2d2d] hover:bg-[#3d3d3d] px-2 py-1 rounded"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 overflow-auto p-4 bg-[#0f0f0f]">
-              <pre
-                className={`whitespace-pre-wrap font-mono text-sm ${
-                  output.toLowerCase().includes("error")
-                    ? "text-red-400"
-                    : "text-green-400"
-                }`}
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="animate-pulse flex items-center gap-2">
-                      <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                      <div className="w-2 h-2 bg-yellow-400 rounded-full delay-75"></div>
-                      <div className="w-2 h-2 bg-yellow-400 rounded-full delay-150"></div>
-                    </div>
-                  </div>
-                ) : output ? (
-                  output
-                ) : (
-                  <span className="text-gray-500">
-                    // Output will appear here after execution
-                  </span>
-                )}
+        {!fullscreen && (
+          <div className="w-1/3 bg-[#111827] p-4 overflow-auto border-l border-gray-700 flex flex-col">
+            <div className="flex-1">
+              <h2 className="text-lg font-bold mb-2">Output</h2>
+              <pre className="text-sm text-green-400 whitespace-pre-wrap bg-[#0d1117] p-2 rounded">
+                {loading ? "Running..." : output || "// Output will appear here."}
               </pre>
             </div>
+            
+            {showAIHelp && (
+              <div className="mt-4 border-t border-gray-700 pt-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h2 className="text-lg font-bold">AI Suggestions</h2>
+                  <button 
+                    onClick={() => setShowAIHelp(false)}
+                    className="text-xs bg-gray-800 px-2 py-1 rounded hover:bg-gray-700"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="text-sm text-yellow-300 whitespace-pre-wrap bg-[#0d1117] p-2 rounded">
+                  {aiHelp}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {showResponse && aiRes && (
-        <AI message={aiRes} onClose={() => setShowResponse(false)} />
-      )}
-
-      <ToastContainer
-        position="bottom-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="dark"
-        transition={Bounce}
-      />
-
-      {!isFullscreen && <Footer />}
+      <ToastContainer position="bottom-right" autoClose={3000} theme="dark" transition={Bounce} />
     </div>
   );
 };
 
-export default Page;
+export default EditorPage;
