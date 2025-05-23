@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Bounce, ToastContainer } from "react-toastify";
+import { i } from "framer-motion/client";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
   title: "RunIt",
   description:
     "A collaborative code execution platform that allows developers to write, edit, and instantly run code in a sandboxed environment.",
+    icons:{icon:"/icon.png"}
 };
 
 export default function RootLayout({
