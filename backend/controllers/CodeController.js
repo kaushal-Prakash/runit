@@ -46,14 +46,6 @@ const getCode = async (req, res) => {
   }
 };
 
-const langMap = {
-  c: 50,
-  cpp: 54,
-  java: 62,
-  js: 63,
-  python: 71,
-};
-
 const runIt = async (req, res) => {
   const { code, language } = req.body;
 
@@ -61,7 +53,6 @@ const runIt = async (req, res) => {
     c: 50,
     cpp: 54,
     java: 62,
-    js: 63,
     python: 71,
   };
 
@@ -71,7 +62,6 @@ const runIt = async (req, res) => {
   }
 
   const encodedCode = Buffer.from(code).toString("base64");
-
   const options = {
     method: 'POST',
     url: 'https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=true&wait=true',
