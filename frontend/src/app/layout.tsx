@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Bounce, ToastContainer } from "react-toastify";
-import { i } from "framer-motion/client";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
