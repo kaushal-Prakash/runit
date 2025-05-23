@@ -13,7 +13,7 @@ const port = process.env.PORT || 5000;
 // Middlewares
 app.use(cors(
   {
-    origin:["https://runit-dev.vercel.app/","http://localhost:3000"],
+    origin:["https://runit-dev.vercel.app","http://localhost:3000"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }
