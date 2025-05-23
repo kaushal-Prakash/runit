@@ -11,7 +11,13 @@ const port = process.env.PORT || 5000;
 
 
 // Middlewares
-app.use(cors());
+app.use(cors(
+  {
+    origin:"https://runit-dev.vercel.app/",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }
+));
 app.use(express.json());
 
 // Connect to database
